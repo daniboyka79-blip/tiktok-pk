@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>TikTok LIVE Match</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #000; color: #fff; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
+
+    /* Top Creator Bar */
+    .top-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px 6px; }
+    .host-pill { display: flex; align-items: center; background: rgba(255,255,255,0.12); border-radius: 20px; padding: 3px 10px 3px 4px; gap: 7px; }
+    .avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(45deg, #fe2c55, #25f4ee); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; }
+    .host-info { display: flex; flex-direction: column; }
+    .host-name { font-size: 13px; font-weight: 700; }
+    .host-likes { font-size: 10px; color: #ddd; }
+    .join-btn { background: #fe2c55; color: #fff; border: none; border-radius: 14px; padding: 4px 10px; font-size: 11px; font-weight: 700; margin-left: 4px; }
+    .viewers-box { display: flex; align-items: center; gap: 6px; }
+    .viewer-count { background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 14px; font-size: 12px; font-weight: 600; }
+
+    .sub-bar { display: flex; justify-content: space-between; padding: 2px 12px 8px; font-size: 11px; color: #ccc; }
+    .badge-tag { background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 10px; }
+
+    /* PK Score Bar */
+    .pk-bar-wrap { position: relative; height: 22px; display: flex; width: 100%; background: #00b8d4; cursor: pointer; }
+    .pk-left-bar { background: linear-gradient(90deg, #ff2a5f, #ff5e7e); height: 100%; width: 55%; transition: width 0.4s ease; display: flex; align-items: center; padding-left: 10px; font-weight: 800; font-size: 13px; }
+    .pk-right-bar { flex: 1; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-weight: 800; font-size: 13px; }
+    .pk-bolt { position: absolute; top: 50%; left: 55%; transform: translate(-50%, -50%); background: #fff; color: #fe2c55; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; box-shadow: 0 0 8px rgba(0,0,0,0.6); transition: left 0.4s ease; }
+
+    /* Split Screen Video Area */
+    .split-arena { position: relative; display: flex; height: 46dvh; width: 100%; background: #141414; }
+    .player-pane { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; border-right: 1px solid rgba(255,255,255,0.15); cursor: pointer; }
+    .player-pane:last-child { border-right: none; }
+    .pane-left { background: radial-gradient(circle at center, #3a1c28, #12090d); }
+    .pane-right { background: radial-gradient(circle at center, #182b3a, #091016); }
+    .player-pane img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .tap-hint { font-size: 11px; color: rgba(255,255,255,0.5); text-align: center; padding: 10px; z-index: 1; }
+
+    .win-badge { position: absolute; top: 8px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; z-index: 3; }
+    .win-left { left: 8px; }
+    .win-right { right: 8px; }
+    .win-active { background: linear-gradient(90deg, #f5af19, #f12711); border-color: #ffe259; }
+
+    .timer-pill { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 3px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; z-index: 4; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); }
+    .opponent-tag { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.55); padding: 3px 8px; border-radius: 12px; font-size: 11px; z-index: 3; }
+
+    /* Victory Overlay */
+    .winner-banner { position: absolute; inset: 0; background: rgba(0,0,0,0.45); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 5; animation: popIn 0.4s ease; }
+    .crown { font-size: 46px; filter: drop-shadow(0 0 10px gold); }
+    .win-text { background: linear-gradient(90deg, #ff9a00, #ff0055); padding: 5px 16px; border-radius: 20px; font-weight: 900; font-size: 16px; letter-spacing: 1px; margin-top: 4px; box-shadow: 0 4px 15px rgba(254,44,85,0.7); }
+    @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+    /* Gift Toast */
+    .gift-toast { position: absolute; left: 10px; bottom: 14px; background: linear-gradient(90deg, rgba(254,44,85,0.9), rgba(255,140,0,0.85)); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; z-index: 6; display: none; animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+
+    /* Bottom Chat & Controls */
+    .mission-strip { background: linear-gradient(90deg, #3b0d1b, #1d080e); border-top: 1px solid #fe2c55; border-bottom: 1px solid #fe2c55; padding: 6px 12px; font-size: 11px; text-align: center; color: #ffccd5; }
+    .chat-area { flex: 1; padding: 8px 12px; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; font-size: 12px; }
+    .chat-msg { background: rgba(255,255,255,0.08); padding: 5px 10px; border-radius: 12px; width: fit-content; max-width: 88%; line-height: 1.35; }
+    .chat-user { color: #7ce8ff; font-weight: 700; margin-right: 4px; }
+
+    .bottom-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px 14px; }
+    .comment-input { flex: 1; background: rgba(255,255,255,0.12); border: none; border-radius: 20px; padding: 8px 14px; color: #fff; font-size: 13px; outline: none; }
+    .icon-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.12); color: #fff; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .gift-btn { background: #fe2c55; }
+  </style>
+</head>
+<body>
+  <div class="top-header">
+    <div class="host-pill">
+      <div class="avatar">E</div>
+      <div class="host-info">
+        <span class="host-name">Elu 🧊</span>
+        <span class="host-likes" id="likesText">❤️ 18.5K</span>
+      </div>
+      <button class="join-btn">+ Join</button>
+    </div>
+    <div class="viewers-box">
+      <div class="viewer-count" id="viewerCount">👁 142</div>
+    </div>
+  </div>
+
+  <div class="sub-bar">
+    <span class="badge-tag">💎 League B4 No. 54</span>
+    <span class="badge-tag" id="goalTag">🎯 Goal: 50,000 pts</span>
+  </div>
+
+  <!-- Tap Score Bar to Boost Elu's Score -->
+  <div class="pk-bar-wrap" onclick="sendBigGift()">
+    <div class="pk-left-bar" id="leftBar"><span id="leftScore">3</span></div>
+    <div class="pk-bolt" id="pkBolt">⚡</div>
+    <div class="pk-right-bar"><span id="rightScore">0</span></div>
+  </div>
+
+  <div class="split-arena">
+    <!-- Left Player (Elu) -->
+    <div class="player-pane pane-left" onclick="document.getElementById('leftFile').click()">
+      <img id="leftImg" style="display:none;" />
+      <span class="tap-hint" id="leftHint">Elu (Tap to add photo)</span>
+      <div class="win-badge win-left" id="leftWinBadge">WIN x0</div>
+      <div class="winner-banner" id="winnerBanner">
+        <div class="crown">👑</div>
+        <div class="win-text">WINNER!</div>
+      </div>
+      <div class="gift-toast" id="giftToast">🦁 Tedo sent Lion (+29,999)</div>
+    </div>
+
+    <!-- Tap Timer to Fast-Forward Match End -->
+    <div class="timer-pill" id="timerPill" onclick="fastForward()">🔥 <span id="timerText">04:50</span></div>
+
+    <!-- Right Player (Opponent) -->
+    <div class="player-pane pane-right" onclick="document.getElementById('rightFile').click()">
+      <img id="rightImg" style="display:none;" />
+      <span class="tap-hint" id="rightHint">Heřý (Tap to add photo)</span>
+      <div class="win-badge win-right">WIN x1</div>
+      <div class="opponent-tag">Heřý ... +</div>
+    </div>
+  </div>
+
+  <input type="file" id="leftFile" accept="image/*" hidden onchange="loadPhoto(event, 'leftImg', 'leftHint')" />
+  <input type="file" id="rightFile" accept="image/*" hidden onchange="loadPhoto(event, 'rightImg', 'rightHint')" />
+
+  <div class="mission-strip" id="missionText">⚡ Tap Score Bar to send Gift | Tap Timer to finish match</div>
+
+  <div class="chat-area" id="chatArea">
+    <div class="chat-msg">🎮 LIVE Match has started! Cheer on your creator, like the match and send Gifts.</div>
+    <div class="chat-msg"><span class="chat-user">Tedo</span> joined 👋</div>
+  </div>
+
+  <div class="bottom-bar">
+    <input type="text" class="comment-input" id="chatInput" placeholder="Type..." onkeypress="handleChat(event)" />
+    <button class="icon-btn" onclick="addLike()">❤️</button>
+    <button class="icon-btn gift-btn" onclick="sendBigGift()">🎁</button>
+  </div>
+
+  <script>
+    let leftScore = 3;
+    let rightScore = 0;
+    let seconds = 290; // 04:50
+    let matchEnded = false;
+
+    const gifts = [
+      { user: "Tedo", name: "TikTok Universe 🚀", pts: 34999 },
+      { user: "Dani", name: "Lion 🦁", pts: 29999 },
+      { user: "Miki", name: "Dragon Flame 🐉", pts: 10000 },
+      { user: "Sara", name: "Sports Car 🏎️", pts: 7000 }
+    ];
+
+    function updateBar() {
+      document.getElementById("leftScore").textContent = leftScore.toLocaleString();
+      document.getElementById("rightScore").textContent = rightScore.toLocaleString();
+      const total = leftScore + rightScore;
+      let pct = total === 0 ? 50 : Math.min(92, Math.max(8, (leftScore / total) * 100));
+      document.getElementById("leftBar").style.width = pct + "%";
+      document.getElementById("pkBolt").style.left = pct + "%";
+    }
+
+    function sendBigGift() {
+      const g = gifts[Math.floor(Math.random() * gifts.length)];
+      leftScore += g.pts;
+      updateBar();
+
+      const toast = document.getElementById("giftToast");
+      toast.textContent = `${g.name} from ${g.user} (+${g.pts.toLocaleString()})`;
+      toast.style.display = "block";
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => { toast.style.display = "none"; }, 2500);
+
+      appendChat(g.user, `sent ${g.name}! 🔥`);
+    }
+
+    function fastForward() {
+      if (!matchEnded && seconds > 4) {
+        seconds = 4;
+        renderTimer();
+      }
+    }
+
+    function renderTimer() {
+      const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+      const s = String(seconds % 60).padStart(2, "0");
+      document.getElementById("timerText").textContent = `${m}:${s}`;
+    }
+
+    setInterval(() => {
+      if (matchEnded) return;
+      if (seconds > 0) {
+        seconds--;
+        renderTimer();
+      } else {
+        matchEnded = true;
+        if (leftScore <= rightScore) {
+          leftScore = rightScore + 15000;
+          updateBar();
+        }
+        document.getElementById("winnerBanner").style.display = "flex";
+        const badge = document.getElementById("leftWinBadge");
+        badge.textContent = "WIN x1";
+        badge.classList.add("win-active");
+        document.getElementById("goalTag").textContent = "🏆 Elu Won the Match!";
+        appendChat("System", "👑 Elu won the LIVE Match!");
+      }
+    }, 1000);
+
+    function loadPhoto(e, imgId, hintId) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const img = document.getElementById(imgId);
+      img.src = URL.createObjectURL(file);
+      img.style.display = "block";
+      document.getElementById(hintId).style.display = "none";
+    }
+
+    function appendChat(user, text) {
+      const box = document.getElementById("chatArea");
+      const div = document.createElement("div");
+      div.className = "chat-msg";
+      div.innerHTML = `<span class="chat-user">${user}</span> ${text}`;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function handleChat(e) {
+      if (e.key === "Enter" && e.target.value.trim()) {
+        appendChat("You", e.target.value.trim());
+        e.target.value = "";
+      }
+    }
+
+    function addLike() {
+      leftScore += 50;
+      updateBar();
+    }
+
+    updateBar();
+  </script>
+</body>
+</html>
